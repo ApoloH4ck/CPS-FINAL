@@ -19,6 +19,16 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
+/* Remove the frame on the login page for a flat design */
+#root.login-active {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 /* Loading & Login */
 .loading-screen {
   display: flex;
@@ -502,3 +512,70 @@ body {
   line-height: 1; cursor: pointer; transition: background-color 0.2s, border-color 0.2s;
 }
 .add-suggestion-btn:hover { background-color: #007bff; color: white; border-color: #007bff; }
+
+/* --- MOBILE OPTIMIZATIONS --- */
+@media (max-width: 767px) {
+  #root {
+    margin: 0;
+    padding: 15px;
+    border-radius: 0;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  
+  .login-container {
+    padding: 0 15px;
+    box-sizing: border-box;
+  }
+  
+  .login-form {
+    padding: 30px;
+    box-shadow: none;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  
+  .controls {
+    justify-content: center;
+  }
+
+  .date-header {
+    font-size: 1.2rem;
+  }
+
+  .task-item {
+    flex-wrap: wrap;
+  }
+
+  .task-actions {
+    /* Show actions by default on mobile */
+    opacity: 1;
+    gap: 8px;
+    margin-left: auto; /* Push to the right */
+  }
+
+  .action-btn {
+    opacity: 1; /* Ensure they are always visible */
+    padding: 8px; /* Increase tap area */
+    font-size: 1.7rem;
+    color: #888;
+  }
+
+  .task-item:hover .action-btn {
+    /* Maintain consistent look */
+    opacity: 1;
+  }
+  
+  .admin-dashboard .user-overview-grid {
+      grid-template-columns: 1fr;
+  }
+}

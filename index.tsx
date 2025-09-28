@@ -816,6 +816,17 @@ const AppWrapper = () => {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            if (!currentUser && !isLoading) {
+                rootElement.classList.add('login-active');
+            } else {
+                rootElement.classList.remove('login-active');
+            }
+        }
+    }, [currentUser, isLoading]);
+
     const handleLogout = async () => {
         await signOut(auth);
     };

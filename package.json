@@ -3,20 +3,25 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "homepage": "https://github.com/ApoloH4ck/CPS-FINAL",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "gh-pages": "^6.3.0",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",
+    "firebase": "^12.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

@@ -646,7 +646,7 @@ function App({ user, onLogout }: { user: any, onLogout: () => void }) {
                 {user.role === 'admin' ? (
                 <>
                     <select className="user-selector" value={viewingUser} onChange={(e) => setViewingUser(e.target.value)}>
-                        {['Juan', 'Matteo', 'Angelo', 'Elias'].map(username => <option key={username} value={username}>{username}</option>)}
+                        {['Angelo', 'Matteo', 'Juan', 'Elias'].map(username => <option key={username} value={username}>{username}</option>)}
                     </select>
                     <button className="suggest-btn" onClick={handleGetSuggestions} disabled={isSuggesting}>{isSuggesting ? '...' : '✨ Suggerimenti'}</button>
                     <button className="add-btn" onClick={() => setModalState({ type: 'task' })}>+ Assegna Attività</button>

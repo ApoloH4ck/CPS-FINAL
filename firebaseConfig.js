@@ -1,36 +1,33 @@
-// firebaseConfig.js
+// src/firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getMessaging } from "firebase/messaging"; // 👈 importa Messaging
 
-// Tu configuración de Firebase, usando variables de entorno
+// ✅ Config en claro (valores de tu proyecto)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyAB2LImUOxx1BstMB12UTFyMfwbvxKJrjg",
+  authDomain: "cps-belvedere.firebaseapp.com",
+  projectId: "cps-belvedere",
+  storageBucket: "cps-belvedere.firebasestorage.app",
+  messagingSenderId: "1089833077765",
+  appId: "1:1089833077765:web:28e8a2b3126f4c8d56e06c",
 };
-
 
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 
-// Exporta los servicios que necesitarás en tu aplicación
+// Exporta servicios
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Initialize messaging safely.
-// It can fail in browsers that don't support it (e.g., non-HTTPS, missing features).
-// This prevents the entire module from failing to load.
-let messagingInstance = null;
+// Messaging (protegido por si el navegador no lo soporta)
+let messaging = null;
 try {
-  messagingInstance = getMessaging(app);
+  messaging = getMessaging(app);
 } catch (err) {
   console.warn("Firebase Messaging could not be initialized.", err);
 }
-
-export const messaging = messagingInstance;
+export { messaging };

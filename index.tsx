@@ -285,7 +285,7 @@ const AdminDashboard = ({
   const photoUploadEnabledUsers = ['Juan', 'Elias', 'Matteo', 'Angelo'];
 
   const { globalStats, priorityTasks, userStats } = useMemo(() => {
-    const allUsernames = ['Juan', 'Matteo', 'Angelo', 'Elias'];
+    const allUsernames = ['Angelo', 'Matteo', 'Juan', 'Elias'];
     // FIX: Explicitly type `allUserTasks` to aid type inference, which may fail with .flat().
     const allUserTasks: Task[] = Object.values(allTasks).flat();
     const sevenDaysAgo = new Date();

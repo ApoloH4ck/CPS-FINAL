@@ -186,7 +186,7 @@ const TaskModal = ({ user, viewingUser, taskToEdit, onClose, onSaveTask, onCreat
             <input id="due-date" type="date" className="modal-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} min={toDateString(new Date())} />
           </div>
         )}
-        {user.role === 'admin' && viewingUser === 'Angelo' && !isEditing && (
+        {user.role === 'admin' && viewingUser === 'Juan' && !isEditing && (
             <div className="checklist-actions">
                 <p>O imposta una scadenza e crea una checklist di manutenzione:</p>
                 <button className="checklist-btn monthly" onClick={() => onCreateChecklistTask('monthly', dueDate)} disabled={!dueDate} title={!dueDate ? "Seleziona una data di scadenza prima di creare una checklist" : ""}>Crea Manutenzione Mensile</button>
@@ -420,7 +420,7 @@ function App({ user, onLogout }: { user: any, onLogout: () => void }) {
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [suggestions, setSuggestions] = useState<Suggestions>({ stagionali: [], contestuali: []});
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [viewingUser, setViewingUser] = useState<string>(user.role === 'admin' ? 'Juan' : user.username);
+  const [viewingUser, setViewingUser] = useState<string>(user.role === 'admin' ? 'Angelo' : user.username);
   const [expandedNoteTaskId, setExpandedNoteTaskId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState('');
   const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);

@@ -186,7 +186,7 @@ const TaskModal = ({ user, viewingUser, taskToEdit, onClose, onSaveTask, onCreat
             <input id="due-date" type="date" className="modal-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} min={toDateString(new Date())} />
           </div>
         )}
-        {user.role === 'admin' && viewingUser === 'Juan' && !isEditing && (
+        {user.role === 'admin' && viewingUser === 'Angelo' && !isEditing && (
             <div className="checklist-actions">
                 <p>O imposta una scadenza e crea una checklist di manutenzione:</p>
                 <button className="checklist-btn monthly" onClick={() => onCreateChecklistTask('monthly', dueDate)} disabled={!dueDate} title={!dueDate ? "Seleziona una data di scadenza prima di creare una checklist" : ""}>Crea Manutenzione Mensile</button>
@@ -282,7 +282,7 @@ const AdminDashboard = ({
   const [taskFilter, setTaskFilter] = useState<'da_fare' | 'completate' | 'tutte'>('da_fare');
   const [expandedNoteTaskId, setExpandedNoteTaskId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState('');
-  const photoUploadEnabledUsers = ['Juan', 'Elias', 'Matteo', 'Angelo'];
+  const photoUploadEnabledUsers = ['Angelo', 'Elias', 'Matteo', 'Juan'];
 
   const { globalStats, priorityTasks, userStats } = useMemo(() => {
     const allUsernames = ['Angelo', 'Matteo', 'Juan', 'Elias'];
@@ -426,7 +426,7 @@ function App({ user, onLogout }: { user: any, onLogout: () => void }) {
   const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);
   
   const tasks = useMemo(() => allTasks[viewingUser] || [], [allTasks, viewingUser]);
-  const photoUploadEnabledUsers = ['Juan', 'Elias', 'Matteo', 'Angelo'];
+  const photoUploadEnabledUsers = ['Angelo', 'Elias', 'Matteo', 'Juan'];
 
   // 1. CARGA DE DATOS DESDE FIRESTORE
   useEffect(() => {

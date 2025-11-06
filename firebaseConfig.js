@@ -7,7 +7,7 @@ import { getMessaging } from "firebase/messaging"; // 👈 importa Messaging
 
 // ✅ Config en claro (valores de tu proyecto)
 const firebaseConfig = {
-  apiKey: "AIzaSyAB2LImUOxx1BstMB12UTFyMfwbvxKJrjg",
+  apiKey: "AIzaSyAB2LImUOxv1BstMB12UTFyMfWbvxKjrjg",
   authDomain: "cps-belvedere.firebaseapp.com",
   projectId: "cps-belvedere",
   storageBucket: "cps-belvedere.firebasestorage.app",

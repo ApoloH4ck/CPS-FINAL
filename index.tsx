@@ -420,13 +420,13 @@ function App({ user, onLogout }: { user: any, onLogout: () => void }) {
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [suggestions, setSuggestions] = useState<Suggestions>({ stagionali: [], contestuali: []});
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [viewingUser, setViewingUser] = useState<string>(user.role === 'admin' ? 'Juan' : user.username);
+  const [viewingUser, setViewingUser] = useState<string>(user.role === 'admin' ? 'Angelo' : user.username);
   const [expandedNoteTaskId, setExpandedNoteTaskId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState('');
   const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);
   
   const tasks = useMemo(() => allTasks[viewingUser] || [], [allTasks, viewingUser]);
-  const photoUploadEnabledUsers = ['Juan', 'Elias', 'Matteo', 'Angelo'];
+  const photoUploadEnabledUsers = ['Angelo', 'Elias', 'Matteo', 'Juan'];
 
   // 1. CARGA DE DATOS DESDE FIRESTORE
   useEffect(() => {

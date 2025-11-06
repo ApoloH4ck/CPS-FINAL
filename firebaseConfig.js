@@ -31,3 +31,6 @@ try {
   console.warn("Firebase Messaging could not be initialized.", err);
 }
 export { messaging };
+
+
+// Fin src/firebaseConfig.js

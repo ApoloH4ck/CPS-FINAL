@@ -513,6 +513,92 @@ body {
 }
 .add-suggestion-btn:hover { background-color: #007bff; color: white; border-color: #007bff; }
 
+
+/* --- APARTMENT GROUPING STYLES --- */
+.apartments-container {
+    margin-bottom: 25px;
+}
+
+.apartment-group {
+    margin-bottom: 10px;
+}
+
+.apartment-header {
+    background-color: #2a2a2a;
+    padding: 15px 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    user-select: none;
+    border: 1px solid #3a3a3a;
+}
+
+.apartment-header:hover {
+    background-color: #333;
+    border-color: #555;
+}
+
+.apartment-header span {
+    font-weight: 500;
+    font-size: 1.05rem;
+    color: #e0e0e0;
+}
+
+.apt-task-count {
+    color: #007bff;
+    font-size: 0.9rem;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+.apartment-arrow {
+    font-size: 0.8rem;
+    color: #888;
+    transition: transform 0.3s ease;
+}
+
+.apartment-arrow.expanded {
+    transform: rotate(180deg);
+}
+
+.apartment-task-list {
+    margin-top: 10px;
+    padding-left: 10px;
+    border-left: 2px solid #333;
+    margin-left: 10px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.no-tasks-apt {
+    padding: 10px;
+    color: #666;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.divider-line {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(100, 100, 100, 0.75), rgba(0, 0, 0, 0));
+    margin: 25px 0;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    color: #888;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 /* --- MOBILE OPTIMIZATIONS --- */
 @media (max-width: 767px) {
   #root {

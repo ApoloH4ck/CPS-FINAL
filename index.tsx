@@ -83,6 +83,7 @@ const APARTMENTS = [
     "Via Lattanzio",
     "Via Gaetta",
     "Via Arco di Parma"
+    "Via Angelo Emo"
 ];
 
 // --- CHECKLISTS DI MANUTENZIONE ---

@@ -690,6 +690,54 @@ body {
 .recent-transactions li.deposit { color: #28a745; }
 .recent-transactions li.expense { color: #e74c3c; }
 
+/* Transaction List Styles */
+.transaction-list-ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.transaction-list-item {
+    background-color: #333;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid transparent;
+}
+
+.transaction-list-item.deposit { border-left-color: #28a745; }
+.transaction-list-item.expense { border-left-color: #e74c3c; }
+
+.trans-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.trans-row.meta {
+    margin-top: 5px;
+}
+
+.trans-amount { font-weight: 700; }
+.transaction-list-item.deposit .trans-amount { color: #28a745; }
+.transaction-list-item.expense .trans-amount { color: #e74c3c; }
+
+.trans-desc { font-size: 0.9rem; color: #ddd; }
+.trans-date { font-size: 0.8rem; color: #888; }
+
+.photo-btn-small {
+    background: none;
+    border: 1px solid #555;
+    color: #ccc;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.photo-btn-small:hover { background-color: #444; color: #fff; }
+
 /* APARTMENT GRID CARD STYLES */
 .apartment-grid {
     display: grid;

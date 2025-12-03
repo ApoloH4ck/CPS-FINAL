@@ -24,7 +24,8 @@ import {
     serverTimestamp,
     setDoc,
     getDoc,
-    arrayUnion
+    arrayUnion,
+    writeBatch
 } from 'firebase/firestore';
 import {
     ref,
@@ -135,7 +136,7 @@ const getUrgencyClass = (dueDate: string | undefined, currentDate: Date): string
 
 
 // --- COMPONENTE LOGIN ---
-const LoginPage = () => {
+const LoginPage = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -178,6 +179,9 @@ const LoginPage = () => {
                     <button type="submit" className="login-button" disabled={loading}>
                         {loading ? <div className="spinner"></div> : 'Accedi'}
                     </button>
+                    <div className="demo-buttons">
+                        <button type="button" className="demo-btn" onClick={onDemoLogin}>Acceso Demo (Admin)</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -191,7 +195,15 @@ const TaskModal = ({ user, viewingUser, taskToEdit, onClose, onSaveTask, onCreat
   const [text, setText] = useState(isEditing ? taskToEdit.text || '' : '');
   const [dueDate, setDueDate] = useState(isEditing ? taskToEdit.dueDate || '' : '');
   const [apartment, setApartment] = useState(isEditing ? taskToEdit.apartment || '' : '');
-  const [assignedTo, setAssignedTo] = useState(isEditing ? taskToEdit.owner : (user.role === 'admin' ? viewingUser : user.name));
+  
+  // Default Assignment Logic
+  const [assignedTo, setAssignedTo] = useState(() => {
+      if (isEditing) return taskToEdit.owner!;
+      // REQUEST: Angelo's default assignment option is Elias
+      if (user.name === 'Angelo') return 'Elias';
+      if (user.role === 'admin') return viewingUser;
+      return user.name;
+  });
   
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -209,20 +221,11 @@ const TaskModal = ({ user, viewingUser, taskToEdit, onClose, onSaveTask, onCreat
   }, [user]);
 
   useEffect(() => {
-      // Default assignment logic when opening modal
-      if (!isEditing) {
-          // If viewing a specific user in Admin mode, default to that user, otherwise default based on role
-          if (user.role === 'admin' && ALL_USERNAMES.includes(viewingUser)) {
-              setAssignedTo(viewingUser);
-          } else if (user.name === 'Elias' && viewingUser === 'Juan') {
-               setAssignedTo('Juan');
-          } else if (user.name === 'Angelo' && viewingUser === 'Juan') {
-               setAssignedTo('Juan');
-          } else if (user.name === 'Elias') {
-               setAssignedTo('Elias');
-          }
+      // Logic for pre-selecting apartment if passed via taskToEdit (e.g. context-aware add)
+      if (taskToEdit.apartment) {
+          setApartment(taskToEdit.apartment);
       }
-  }, [isEditing, user, viewingUser]);
+  }, [taskToEdit]);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -342,20 +345,56 @@ const TransactionModal = ({ user, onClose, onSave }: { user: any, onClose: () =>
 };
 
 // --- FINANCE WIDGET ---
-const FinanceWidget = ({ balance, onOpenModal }: { balance: number, onOpenModal: () => void }) => {
+const FinanceWidget = ({ balance, onOpenModal, isAdmin, onReset }: { balance: number, onOpenModal: () => void, isAdmin: boolean, onReset: () => void }) => {
     return (
         <div className="finance-widget">
             <div className={`balance-box ${balance >= 0 ? 'positive' : 'negative'}`}>
                 <span className="balance-label">Fondo Casa</span>
                 <span className="balance-amount">€ {balance.toFixed(2)}</span>
             </div>
-            <button className="finance-btn" onClick={onOpenModal}>
-                Gestisci / Aggiungi
-            </button>
+            <div style={{display: 'flex', gap: '10px', width: '100%'}}>
+                <button className="finance-btn" onClick={onOpenModal}>
+                    Gestisci / Aggiungi
+                </button>
+                {isAdmin && (
+                    <button className="finance-btn" style={{width: 'auto', backgroundColor: '#c82333', borderColor: '#a31c29'}} onClick={onReset} title="Elimina tutte le transazioni e resetta il fondo">
+                        🗑️
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
 
+// --- TRANSACTION LIST COMPONENT ---
+const TransactionList = ({ transactions, onShowPhoto }: { transactions: Transaction[], onShowPhoto: (url: string) => void }) => {
+    if (transactions.length === 0) return null;
+    return (
+        <div className="recent-transactions">
+            <h4>Storico Transazioni</h4>
+             <ul className="transaction-list-ul">
+                 {transactions.map(t => (
+                     <li key={t.id} className={`transaction-list-item ${t.type}`}>
+                         <div className="trans-row">
+                            <span className="trans-amount">{t.type === 'deposit' ? '+' : '-'} €{t.amount.toFixed(2)}</span>
+                            <span className="trans-desc">{t.description}</span>
+                         </div>
+                         <div className="trans-row meta">
+                            <span className="trans-date">
+                                {t.date && typeof t.date.toDate === 'function' ? t.date.toDate().toLocaleDateString('it-IT') : 'Oggi'}
+                            </span>
+                            {t.photo && (
+                                <button className="photo-btn-small" onClick={(e) => { e.stopPropagation(); onShowPhoto(t.photo!); }}>
+                                    📷 Vedi Foto
+                                </button>
+                            )}
+                         </div>
+                     </li>
+                 ))}
+             </ul>
+        </div>
+    );
+};
 
 // --- SUGGESTIONS MODAL ---
 const SuggestionsModal = ({ isOpen, isLoading, suggestions, onAdd, onClose }: { isOpen: boolean, isLoading: boolean, suggestions: Suggestions, onAdd: (text: string) => void, onClose: () => void }) => {
@@ -524,7 +563,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 // --- ADMIN DASHBOARD ---
 const AdminDashboard = ({ 
   allTasks, viewingUser, handleToggleTask, handleToggleSubtask, handleToggleImportance, handleDeleteTask, handleBreakdownTask, handleUpdateNote, handleSubtaskPhotoUpload, setModalState,
-  transactions, balance, onOpenTransactionModal
+  transactions, balance, onOpenTransactionModal, onResetFinance
 }: {
   allTasks: Record<string, Task[]>,
   viewingUser: string,
@@ -538,7 +577,8 @@ const AdminDashboard = ({
   setModalState: (state: ModalState) => void,
   transactions: Transaction[],
   balance: number,
-  onOpenTransactionModal: () => void
+  onOpenTransactionModal: () => void,
+  onResetFinance: () => void
 }) => {
   const [taskFilter, setTaskFilter] = useState<'da_fare' | 'completate' | 'tutte'>('da_fare');
   const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null);
@@ -634,19 +674,8 @@ const AdminDashboard = ({
         {viewingUser === 'Elias' && (
              <div className="widget">
                  <h3>Gestione Fondo Elias</h3>
-                 <FinanceWidget balance={balance} onOpenModal={onOpenTransactionModal} />
-                 {transactions.length > 0 && (
-                     <div className="recent-transactions">
-                         <h4>Ultime Transazioni</h4>
-                         <ul>
-                             {transactions.slice(0,3).map(t => (
-                                 <li key={t.id} className={t.type}>
-                                     {t.type === 'deposit' ? '+' : '-'}€{t.amount} {t.description}
-                                 </li>
-                             ))}
-                         </ul>
-                     </div>
-                 )}
+                 <FinanceWidget balance={balance} onOpenModal={onOpenTransactionModal} isAdmin={true} onReset={onResetFinance}/>
+                 <TransactionList transactions={transactions} onShowPhoto={(url) => setModalState({ type: 'photo', data: url })} />
              </div>
         )}
       </div>
@@ -654,7 +683,8 @@ const AdminDashboard = ({
       <div className="task-management-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <h2 style={{margin: 0}}>Gestione Attività: {viewingUser}</h2>
-            <button className="add-btn" onClick={() => setModalState({ type: 'task' })}>+ Nuova Attività</button>
+            {/* Added apartment context to New Task */}
+            <button className="add-btn" onClick={() => setModalState({ type: 'task', data: { apartment: activeApartment || undefined } })}>+ Nuova Attività</button>
         </div>
         <div className="task-filters">
             <button className={taskFilter === 'da_fare' ? 'active' : ''} onClick={() => setTaskFilter('da_fare')}>Da Fare</button>
@@ -762,6 +792,15 @@ const App = () => {
 
   // State for User Dashboard (Apartment Grid View)
   const [activeApartment, setActiveApartment] = useState<string | null>(null);
+  
+  // REQUEST: Filter for all users
+  const [userTaskFilter, setUserTaskFilter] = useState<'da_fare' | 'completate' | 'tutte'>('da_fare');
+
+  const handleDemoLogin = () => {
+      // Demo Admin
+      setUser({ uid: 'demo-admin', email: 'admin@test.com', role: 'admin', name: 'Admin' });
+      setViewingUser('Angelo'); // REQUEST: Admin default view is Angelo
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -769,13 +808,14 @@ const App = () => {
         let role = 'user';
         let name = 'Utente';
         
-        if (u.email === 'admin@belvedereinvestimenti.it') { role = 'admin'; name = 'Admin'; }
-        else if (u.email === 'juan@belvedereinvestimenti.it') { role = 'user'; name = 'Juan'; }
-        else if (u.email === 'elias@belvedereinvestimenti.it') { role = 'user'; name = 'Elias'; }
-        else if (u.email === 'angelo@belvedereinvestimenti.it') { role = 'user'; name = 'Angelo'; } // Added Angelo
+        if (u.email === 'admin@test.com') { role = 'admin'; name = 'Admin'; }
+        else if (u.email === 'juan@test.com') { role = 'user'; name = 'Juan'; }
+        else if (u.email === 'elias@test.com') { role = 'user'; name = 'Elias'; }
+        else if (u.email === 'angelo@test.com') { role = 'user'; name = 'Angelo'; } // Added Angelo
         
         setUser({ uid: u.uid, email: u.email, role, name });
-        setViewingUser(role === 'admin' ? 'Juan' : name); // Default view
+        // REQUEST: Admin default view is Angelo
+        setViewingUser(role === 'admin' ? 'Angelo' : name); 
       } else {
         // If not logged in via Firebase, we might be in demo mode. 
         // If user is already set by handleDemoLogin, don't nullify immediately if loading is false.
@@ -886,7 +926,25 @@ const App = () => {
               date: serverTimestamp()
           });
           setModalState({ type: null });
-      } catch (e) { console.error(e); }
+      } catch (e: any) { 
+          console.error(e);
+          alert("Errore durante il salvataggio: " + e.message);
+      }
+  };
+
+  // REQUEST: Reset Fund and Transactions
+  const handleResetFinance = async () => {
+      if(confirm("Sei sicuro di voler ELIMINARE TUTTE le transazioni e resettare il fondo? Questa azione è irreversibile.")) {
+          try {
+              // Delete all documents in transactions collection
+              // Note: Client side batch delete. For large collections, use Cloud Functions.
+              const batch = writeBatch(db);
+              transactions.forEach(t => {
+                  batch.delete(doc(db, 'transactions', t.id));
+              });
+              await batch.commit();
+          } catch(e) { console.error("Error resetting finance:", e); }
+      }
   };
 
   const handleCreateChecklistTask = async (type: 'monthly' | 'quarterly', dueDate: string, assignedTo: string) => {
@@ -994,8 +1052,15 @@ const App = () => {
       const apartmentTasks: Record<string, Task[]> = {};
       const generalTasks: Task[] = [];
       
+      // Filter based on user selection
+      const filteredUserTasks = tasks.filter(t => {
+          if (userTaskFilter === 'da_fare') return !t.completed;
+          if (userTaskFilter === 'completate') return t.completed;
+          return true;
+      });
+
       // Sort tasks Newest First
-      const sortedTasks = [...tasks].sort((a,b) => b.date.localeCompare(a.date));
+      const sortedTasks = [...filteredUserTasks].sort((a,b) => b.date.localeCompare(a.date));
 
       sortedTasks.forEach(task => {
           if (task.apartment && APARTMENTS.includes(task.apartment)) {
@@ -1008,9 +1073,19 @@ const App = () => {
 
       return (
           <div className="apartments-container">
+             {/* REQUEST: Filters for normal users */}
+             <div className="task-filters" style={{marginBottom: '20px', justifyContent: 'center'}}>
+                <button className={userTaskFilter === 'da_fare' ? 'active' : ''} onClick={() => setUserTaskFilter('da_fare')}>Da Fare</button>
+                <button className={userTaskFilter === 'completate' ? 'active' : ''} onClick={() => setUserTaskFilter('completate')}>Completate</button>
+                <button className={userTaskFilter === 'tutte' ? 'active' : ''} onClick={() => setUserTaskFilter('tutte')}>Tutte</button>
+             </div>
+
              {!activeApartment ? (
                  <div className="apartment-grid">
                      {APARTMENTS.map(apt => {
+                         // Count total tasks for this apartment regardless of current filter to show "activity load"
+                         // OR count based on filter? Usually better to count pending.
+                         // Let's count based on the current filter view to match what they see inside.
                          const count = apartmentTasks[apt]?.length || 0;
                          return (
                              <div key={apt} className="apartment-card" onClick={() => setActiveApartment(apt)}>
@@ -1023,10 +1098,18 @@ const App = () => {
              ) : (
                 <div className="apartment-detail-view">
                     <button className="back-btn" onClick={() => setActiveApartment(null)}>← Torna ai dipartimenti</button>
-                    <h3>{activeApartment}</h3>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+                        <h3 style={{margin: 0, border: 'none'}}>{activeApartment}</h3>
+                        {/* REQUEST: Pre-select apartment when adding task from here */}
+                        {user.name !== 'Juan' && (
+                            <button className="add-btn" style={{fontSize: '0.9rem', padding: '8px 12px'}} onClick={() => setModalState({ type: 'task', data: { apartment: activeApartment || undefined } })}>
+                                + Nuova Attività Qui
+                            </button>
+                        )}
+                    </div>
                      <ul className="task-list apartment-task-list">
                          {(!apartmentTasks[activeApartment] || apartmentTasks[activeApartment].length === 0) ? (
-                             <p className="no-tasks-apt">Nessuna attività.</p>
+                             <p className="no-tasks-apt">Nessuna attività con questo filtro.</p>
                          ) : (
                              apartmentTasks[activeApartment].map(task => (
                                 <TaskItem 
@@ -1078,7 +1161,7 @@ const App = () => {
 
 
   if (loading || isLoggingOut) return <div className="loading-screen">Caricamento...</div>;
-  if (!user) return <LoginPage />;
+  if (!user) return <LoginPage onDemoLogin={handleDemoLogin} />;
 
   return (
     <div className="app-container">
@@ -1109,6 +1192,7 @@ const App = () => {
             transactions={transactions}
             balance={balance}
             onOpenTransactionModal={() => setModalState({type: 'transaction'})}
+            onResetFinance={handleResetFinance}
         />
       ) : (
         <main>
@@ -1123,7 +1207,8 @@ const App = () => {
             
             {user.name === 'Elias' && (
                 <div style={{marginBottom: '20px'}}>
-                     <FinanceWidget balance={balance} onOpenModal={() => setModalState({type: 'transaction'})} />
+                     <FinanceWidget balance={balance} onOpenModal={() => setModalState({type: 'transaction'})} isAdmin={false} onReset={() => {}} />
+                     <TransactionList transactions={transactions} onShowPhoto={(url) => setModalState({ type: 'photo', data: url })} />
                 </div>
             )}
 
@@ -1131,7 +1216,8 @@ const App = () => {
             {user.name !== 'Juan' && (
                 <div className="task-actions-bar" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px' }}>
                     <button className="suggest-btn" onClick={handleFetchSuggestions}>✨ Suggeriscimi</button>
-                    <button className="add-btn" onClick={() => setModalState({ type: 'task' })}>+ Nuova Attività</button>
+                    {/* REQUEST: Context aware - if activeApartment is null, undefined is passed */}
+                    <button className="add-btn" onClick={() => setModalState({ type: 'task', data: { apartment: activeApartment || undefined } })}>+ Nuova Attività</button>
                 </div>
             )}
 

@@ -136,7 +136,7 @@ const getUrgencyClass = (dueDate: string | undefined, currentDate: Date): string
 
 
 // --- COMPONENTE LOGIN ---
-const LoginPage = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
+const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -179,9 +179,6 @@ const LoginPage = ({ onDemoLogin }: { onDemoLogin: () => void }) => {
                     <button type="submit" className="login-button" disabled={loading}>
                         {loading ? <div className="spinner"></div> : 'Accedi'}
                     </button>
-                    <div className="demo-buttons">
-                        <button type="button" className="demo-btn" onClick={onDemoLogin}>Acceso Demo (Admin)</button>
-                    </div>
                 </form>
             </div>
         </div>
@@ -796,12 +793,6 @@ const App = () => {
   // REQUEST: Filter for all users
   const [userTaskFilter, setUserTaskFilter] = useState<'da_fare' | 'completate' | 'tutte'>('da_fare');
 
-  const handleDemoLogin = () => {
-      // Demo Admin
-      setUser({ uid: 'demo-admin', email: 'admin@test.com', role: 'admin', name: 'Admin' });
-      setViewingUser('Angelo'); // REQUEST: Admin default view is Angelo
-  };
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
@@ -1161,7 +1152,7 @@ const App = () => {
 
 
   if (loading || isLoggingOut) return <div className="loading-screen">Caricamento...</div>;
-  if (!user) return <LoginPage onDemoLogin={handleDemoLogin} />;
+  if (!user) return <LoginPage />;
 
   return (
     <div className="app-container">

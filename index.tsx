@@ -799,10 +799,10 @@ const App = () => {
         let role = 'user';
         let name = 'Utente';
         
-        if (u.email === 'admin@test.com') { role = 'admin'; name = 'Admin'; }
-        else if (u.email === 'juan@test.com') { role = 'user'; name = 'Juan'; }
-        else if (u.email === 'elias@test.com') { role = 'user'; name = 'Elias'; }
-        else if (u.email === 'angelo@test.com') { role = 'user'; name = 'Angelo'; } // Added Angelo
+        if (u.email === 'admin@belvedereinvestimenti.it') { role = 'admin'; name = 'Admin'; }
+        else if (u.email === 'juan@belvedereinvestimenti.it') { role = 'user'; name = 'Juan'; }
+        else if (u.email === 'elias@belvedereinvestimenti.it') { role = 'user'; name = 'Elias'; }
+        else if (u.email === 'angelo@belvedereinvestimenti.it') { role = 'user'; name = 'Angelo'; } // Added Angelo
         
         setUser({ uid: u.uid, email: u.email, role, name });
         // REQUEST: Admin default view is Angelo

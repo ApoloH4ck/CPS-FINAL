@@ -58,6 +58,7 @@ interface Task {
   apartment?: string; // Field for apartment assignment
   createdAt?: any; // Firestore Timestamp
   completedAt?: any; // Firestore Timestamp
+  isPending?: boolean; // Local state for latency compensation
 }
 
 interface Suggestions {
@@ -134,9 +135,60 @@ const getUrgencyClass = (dueDate: string | undefined, currentDate: Date): string
     return ''; // Neutral for 4-5 days
 };
 
+// SORTING STRATEGY
+// - Pending tasks appear at the TOP, sorted by Creation Date DESC (Newest first).
+// - Completed tasks appear at the BOTTOM, sorted by Completion Date DESC (Most recently completed first).
+// - Uses nanoseconds for precision and falls back to 'date' string for legacy data.
+const sortTasksStrategy = (a: Task, b: Task): number => {
+    // 1. Group by Status: Pending first, then Completed.
+    if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+    }
+
+    // Helper to get a high-precision comparable timestamp (seconds + nanoseconds)
+    const getTimestamp = (t: Task, field: 'createdAt' | 'completedAt') => {
+        const val = t[field];
+        if (val && typeof val.seconds === 'number') {
+            // Firestore Timestamp: seconds + nanoseconds
+            return val.seconds + (val.nanoseconds || 0) / 1e9;
+        }
+        // Latency compensation: New pending writes get "NOW"
+        if (t.isPending) return Date.now() / 1000;
+        
+        return 0; // Legacy data or missing field
+    };
+
+    let timeA = 0;
+    let timeB = 0;
+
+    if (a.completed) {
+        // Both completed: Sort by completedAt DESC
+        timeA = getTimestamp(a, 'completedAt');
+        timeB = getTimestamp(b, 'completedAt');
+    } else {
+        // Both pending: Sort by createdAt DESC
+        timeA = getTimestamp(a, 'createdAt');
+        timeB = getTimestamp(b, 'createdAt');
+    }
+
+    // Compare timestamps (DESC)
+    const diff = timeB - timeA;
+    if (Math.abs(diff) > 0.000001) { 
+        return diff; 
+    }
+
+    // Fallback 1: Sort by 'date' string (YYYY-MM-DD) for legacy items without timestamps
+    // DESC (Newest date first)
+    const dateComp = b.date.localeCompare(a.date);
+    if (dateComp !== 0) return dateComp;
+
+    // Fallback 2: Creation Order (if available via other field) or Alphabetical to keep stable
+    return (b.text || "").localeCompare(a.text || "");
+};
+
 
 // --- COMPONENTE LOGIN ---
-const LoginPage = () => {
+const LoginPage = ({ onDemoLogin }: { onDemoLogin: (user: any) => void }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -161,6 +213,15 @@ const LoginPage = () => {
         }
     };
 
+    const handleDemoAdmin = () => {
+        onDemoLogin({
+            uid: 'demo-admin',
+            email: 'admin@test.com',
+            role: 'admin',
+            name: 'Admin'
+        });
+    };
+
     return (
         <div className="login-container">
             <div className="login-form">
@@ -180,6 +241,11 @@ const LoginPage = () => {
                         {loading ? <div className="spinner"></div> : 'Accedi'}
                     </button>
                 </form>
+                <div className="demo-buttons">
+                    <button type="button" className="demo-btn" onClick={handleDemoAdmin}>
+                        Accesso Demo Admin
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -501,9 +567,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     <div className="task-text-container">
                         <span className="task-text">{task.text}</span>
                         <span className="task-meta">Creato il: {task.date}</span>
-                        {task.completed && task.completedAt && (
+                        {task.completed && (
                              <span className="task-meta completed-date">
-                                Completato il: {task.completedAt?.toDate ? task.completedAt.toDate().toLocaleDateString('it-IT') : new Date().toLocaleDateString('it-IT')}
+                                Completato il: {task.completedAt?.toDate ? task.completedAt.toDate().toLocaleDateString('it-IT') : 'Oggi'}
                              </span>
                         )}
                         {task.dueDate && (<span className={`task-due-date ${urgencyClass}`}>Scadenza: {new Date(task.dueDate + 'T00:00:00').toLocaleDateString('it-IT', { year: 'numeric', month: 'long', day: 'numeric' })}</span>)}
@@ -598,12 +664,8 @@ const AdminDashboard = ({
   }, [allTasks]);
 
   const viewingUserTasks = useMemo(() => {
-    const tasks = (allTasks[viewingUser] || []).slice().sort((a, b) => {
-        // Sort: Newest created first (by date string desc, or timestamp desc if available)
-        // If date is YYYY-MM-DD
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        return 0;
-    });
+    // Sort items using the unified strategy (Completed newest first, Pending newest created first)
+    const tasks = (allTasks[viewingUser] || []).slice().sort(sortTasksStrategy);
     return tasks;
   }, [allTasks, viewingUser]);
 
@@ -637,6 +699,13 @@ const AdminDashboard = ({
               genTasks.push(task);
           }
       });
+
+      // EXPLICIT SORT: Re-sort grouped arrays to guarantee order consistency within apartment views
+      Object.keys(aptTasks).forEach(key => {
+          aptTasks[key].sort(sortTasksStrategy);
+      });
+      genTasks.sort(sortTasksStrategy);
+
       return { apartmentTasks: aptTasks, generalTasks: genTasks };
   }, [filteredTasks]);
 
@@ -799,10 +868,10 @@ const App = () => {
         let role = 'user';
         let name = 'Utente';
         
-        if (u.email === 'admin@belvedereinvestimenti.it') { role = 'admin'; name = 'Admin'; }
-        else if (u.email === 'juan@belvedereinvestimenti.it') { role = 'user'; name = 'Juan'; }
-        else if (u.email === 'elias@belvedereinvestimenti.it') { role = 'user'; name = 'Elias'; }
-        else if (u.email === 'angelo@belvedereinvestimenti.it') { role = 'user'; name = 'Angelo'; } // Added Angelo
+        if (u.email === 'admin@test.com') { role = 'admin'; name = 'Admin'; }
+        else if (u.email === 'juan@test.com') { role = 'user'; name = 'Juan'; }
+        else if (u.email === 'elias@test.com') { role = 'user'; name = 'Elias'; }
+        else if (u.email === 'angelo@test.com') { role = 'user'; name = 'Angelo'; } // Added Angelo
         
         setUser({ uid: u.uid, email: u.email, role, name });
         // REQUEST: Admin default view is Angelo
@@ -823,7 +892,13 @@ const App = () => {
     if (!user) return;
     const q = query(collection(db, 'tasks'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+      // Use pending writes metadata to handle local latency
+      const fetchedTasks = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        isPending: doc.metadata.hasPendingWrites 
+      } as Task));
+
       if (user.role === 'admin') {
         const grouped: Record<string, Task[]> = {};
         ALL_USERNAMES.forEach(u => grouped[u] = []);
@@ -833,11 +908,7 @@ const App = () => {
         }});
         setAllTasks(grouped);
       } else {
-        setTasks(fetchedTasks.filter(t => t.owner === user.name).sort((a, b) => {
-            // Sort Newest First
-             if (a.date !== b.date) return b.date.localeCompare(a.date);
-            return 0;
-        }));
+        setTasks(fetchedTasks.filter(t => t.owner === user.name).sort(sortTasksStrategy));
       }
     });
     return () => unsubscribe();
@@ -1050,8 +1121,8 @@ const App = () => {
           return true;
       });
 
-      // Sort tasks Newest First
-      const sortedTasks = [...filteredUserTasks].sort((a,b) => b.date.localeCompare(a.date));
+      // Sort tasks: Completed items by Completion Time DESC, others by Creation Date DESC
+      const sortedTasks = [...filteredUserTasks].sort(sortTasksStrategy);
 
       sortedTasks.forEach(task => {
           if (task.apartment && APARTMENTS.includes(task.apartment)) {
@@ -1061,6 +1132,12 @@ const App = () => {
               generalTasks.push(task);
           }
       });
+
+      // EXPLICIT SORT: Re-sort grouped arrays to guarantee order consistency within apartment views
+      Object.keys(apartmentTasks).forEach(key => {
+          apartmentTasks[key].sort(sortTasksStrategy);
+      });
+      generalTasks.sort(sortTasksStrategy);
 
       return (
           <div className="apartments-container">
@@ -1152,7 +1229,7 @@ const App = () => {
 
 
   if (loading || isLoggingOut) return <div className="loading-screen">Caricamento...</div>;
-  if (!user) return <LoginPage />;
+  if (!user) return <LoginPage onDemoLogin={(u) => setUser(u)} />;
 
   return (
     <div className="app-container">
